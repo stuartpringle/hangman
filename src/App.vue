@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
 import AppMenu from '@/components/AppMenu.vue'
+
+const copyrightYear = new Date().getFullYear()
 </script>
 
 <template>
@@ -18,11 +20,33 @@ import AppMenu from '@/components/AppMenu.vue'
   </header>
 
   <!-- Display the actual page contents -->
-  <RouterView />
+  <div class="main-panel-wrapper">
+    <RouterView />
+  </div>
+  <footer>
+    <div class="copyright-text">&copy; {{ copyrightYear }} <a href="mailto:contact@stuartpringle.ca">stuart pringle</a></div>
+  </footer>
 </template>
 
 <style>
 @import '@/assets/base.css';
+
+header {
+
+  line-height: 1.5;
+  grid-area: sidebar;
+}
+
+footer {
+  padding-top: 30px;
+  display: block;
+  text-align: center;
+  grid-area: footer;
+}
+
+.main-panel-wrapper {
+  grid-area: main-app;
+}
 
 #app {
   max-width: 1280px;
@@ -30,11 +54,14 @@ import AppMenu from '@/components/AppMenu.vue'
   padding: 2rem;
 
   font-weight: normal;
-}
 
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+  grid-template-columns: 33% 33% 33%;
+  grid-template-rows: auto;
+  grid-template-areas:
+  "header header header"
+  "sidebar main-app main-app"
+  "footer footer footer";
+
 }
 
 .logo {
@@ -80,13 +107,36 @@ nav a:first-of-type {
   border: 0;
 }
 
+@media (max-width: 1023px) {
+  .main-panel-wrapper,
+  footer,
+  header {
+    width: 100%;
+  }
+  header .wrapper {
+    display: flex;
+    place-items: flex-start;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  body #app {
+    grid-template-columns: 100%;
+    grid-template-rows: auto;
+    grid-template-areas:
+    "header"
+    "sidebar"
+    "main-app"
+    "footer";
+  }
+}
+
 @media (min-width: 1024px) {
   body {
     display: flex;
     place-items: center;
   }
 
-  #app {
+  body #app {
     display: grid;
     grid-template-columns: 1fr 1fr;
     padding: 0 2rem;
@@ -96,13 +146,13 @@ nav a:first-of-type {
     display: flex;
     place-items: center;
     padding-right: calc(var(--section-gap) / 2);
+    max-height: 100vh;
   }
 
   header .wrapper {
     display: flex;
     place-items: flex-start;
     flex-wrap: wrap;
-    width: 450px;
   }
 
   .logo {
@@ -116,6 +166,10 @@ nav a:first-of-type {
 
     padding: 1rem 0;
     margin-top: 1rem;
+  }
+
+  footer {
+    min-height: 60px;
   }
 }
 </style>

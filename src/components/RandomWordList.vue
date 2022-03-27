@@ -1,5 +1,7 @@
-<script lang="ts">
-  export default {
+<script>
+  import { defineComponent } from 'vue'
+
+  export default defineComponent({
       data() {
         return {
           wordList: ['skinny',
@@ -2003,5 +2005,5 @@
             'expand']
         }
       },
-  }
+  })
 </script>

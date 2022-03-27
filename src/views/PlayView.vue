@@ -1,5 +1,8 @@
-<script lang="ts">
-  export default {
+<script>
+  import { defineComponent } from 'vue'
+  import { nextTick } from 'vue'
+
+  export default defineComponent({
     data() {
       return {
         main_input: null,
@@ -10,18 +13,21 @@
         displayedWrongString: '',
         alphabet: ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"],
         hangingManStates: [1, 2, 3, 4, 5, 6, 7, 'dead'],
-        displayInput: false
+        displayInput: false,
+        playAgainButtonText: 'play',
       }
     },
     methods: {
-      init() {
+      async init() {
+        const input_container = this.$refs.input_container;
         if(this.game_word == '') {
           this.emitter.emit("getNewWord")
           this.emitter.emit("getWrongLetters")
           this.emitter.emit("getCorrectLetters")
-          document.getElementById('play-again').innerHTML = 'reset'
+          this.playAgainButtonText = 'reset'
           this.displayInput = true
-          this.$refs.input_container.focus()
+          await nextTick()
+          input_container.focus()
         }
       },
       resetGame() {
@@ -33,18 +39,24 @@
         for(let i = 0; i < this.game_word.length; i++) {
           this.displayedCorrectString += ' '
         }
-        this.displayedCorrectString = this.updateDispalyedLetters(this.displayedCorrectString, this.correctLetters, this.game_word)
+        this.displayedCorrectString = this.updateDisplayedLetters(this.displayedCorrectString, this.correctLetters, this.game_word)
 
         this.displayedWrongString = ''
         for(let i = 0; i < this.alphabet.length; i++) {
           this.displayedWrongString += ' '
         }
-        this.displayedWrongString = this.updateDispalyedLetters(this.displayedWrongString, this.wrongLetters, this.alphabet.join(''))
+        //send correct letters as the '|' string into the displayedWrongString variable
+        this.displayedWrongString = this.updateDisplayedLetters(this.displayedWrongString, this.correctLetters, this.alphabet.join(''), true)
+
+        //now fill the rest of it with the normal stuff
+        this.displayedWrongString = this.updateDisplayedLetters(this.displayedWrongString, this.wrongLetters, this.alphabet.join(''))
         //console.log('ll' + this.displayedWrongString + 'll')
       },
-      updateDispalyedLetters(displayedString, actualLetters, fullString) {
+      updateDisplayedLetters(displayedString, actualLetters, fullString, fillWithPlaceholder = false) {
+        const placeholder = '|'
         let temp = displayedString.split('')
         for(let i = 0; i < actualLetters.length; i++) {
+          //find all instances of current letter in displayedString
           let pos = fullString.toLowerCase().indexOf(actualLetters[i].toLowerCase());
           let increment = -1
           let counter = 0
@@ -52,7 +64,12 @@
             counter++
             let pos = fullString.toLowerCase().indexOf(actualLetters[i].toLowerCase(), increment + 1);
             increment = pos
-            temp[pos] = actualLetters[i].toLowerCase()
+            if(fillWithPlaceholder) {
+              temp[pos] = placeholder
+            } else {
+              temp[pos] = actualLetters[i].toLowerCase()
+            }
+            
           }
         }
         //console.log(fullString)
@@ -72,8 +89,8 @@
         }
       },
       youLose() {
-        document.getElementById('input-container').style.display = 'none'
-        document.getElementById('play-again').innerHTML = 'play again'
+        this.displayInput = false
+        this.playAgainButtonText = 'play again'
         setTimeout(() => {  this.emitter.emit("setHangingManState", this.hangingManStates[this.hangingManStates.length - 1]) }, 2000);
       },
     },
@@ -87,10 +104,10 @@
       }
     },
     mounted(){
+      this.init()
       this.emitter.emit("updateInfoPaneBlurbEvent", 'We\'ve got a word just for you.  Can you guess it, or will you hang?')
     },
     created() {
-      //this.init()
       this.emitter.on("receiveCorrectLetters", (evt) => {
         this.correctLetters = evt
         this.getLettersToShow()
@@ -106,9 +123,10 @@
       });
       this.emitter.on("receiveNewWord", (new_word) => {
         this.game_word = new_word
+        this.getLettersToShow()
       });
     }
-  }
+  })
 </script>
 
 <template>
@@ -118,7 +136,7 @@
         <ul>
           <li v-for="(letter, index) in displayedCorrectString.split('')">
             <div class="letter">{{ letter }}</div>
-            <div class="underline"></div>
+            <div v-if="letter !== '-'" class="underline"></div>
           </li>
         </ul>
       </div>
@@ -126,12 +144,14 @@
     <div class="right-col column">
       <div class="wrong-letters-wrapper">
         <div v-for="(letter, index) in displayedWrongString.split('')">
-          <span :class="[ letter == ' ' ? 'inactive' : 'active' ]">
-            {{ letter == ' ' ? alphabet[index].toLowerCase() : letter }}
-          </span>
+          <span v-if="letter == ' '" class="inactive">{{ alphabet[index].toLowerCase() }}</span>
+          <span v-else-if="letter == '|'" class="correct">{{ alphabet[index].toLowerCase() }}</span>
+          <span v-else class="active">{{ letter }}</span>
         </div>
+      </div>
+      <div class="input-wrapper">
         <input ref="input_container" class="input-container" id="input-container" :class="[displayInput ? 'active' : 'inactive']" v-model="main_input" placeholder="guess here" />
-        <button @click="resetGame" id="play-again">play</button>
+        <button @click="resetGame" ref="play_again" id="play-again">{{ playAgainButtonText }}</button>
       </div>
     </div>
   </div>
@@ -156,7 +176,14 @@ button:hover, button:active {
 }
 
 .column {
-  width: 50%;
+  width: 100%;
+}
+
+.column .wrong-letters-wrapper,
+.column .input-wrapper {
+  margin-top: 30px;
+  text-align: center;
+  width: 100%;
 }
 
 .input-container {
@@ -169,6 +196,7 @@ button:hover, button:active {
   margin: auto;
   margin-top: 30px;
 }
+
 .input-container.inactive {
   display: none;
 }
@@ -188,12 +216,16 @@ button:hover, button:active {
   font-size: 30pt;
 }
 
-.inactive {
+.wrong-letters-wrapper .inactive {
   color: #ccc;
 }
 
-.active {
-  color: #000;
+.wrong-letters-wrapper .correct {
+  color: hsla(160, 100%, 37%, 1);
+}
+
+.wrong-letters-wrapper .active {
+  color: red;
 }
 
 .main-word-wrapper ul {
@@ -201,6 +233,7 @@ button:hover, button:active {
   flex-wrap: wrap;
   flex-direction: row;
   font-size: 30pt;
+  justify-content: center;
 }
 
 .main-word-wrapper li {
@@ -217,12 +250,26 @@ button:hover, button:active {
   height: 2px;
   width: 50%;
 }
-
+.play {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  flex-direction: column;
+}
+@media (max-width: 1023px) {
+  .wrong-letters-wrapper {
+    justify-content: center;
+  }
+}
 @media (min-width: 1024px) {
   .play {
-    min-height: 100vh;
+    min-height: calc(100vh - 60px);
     display: flex;
+    justify-content: center;
     align-items: center;
+  }
+  .column {
+    width: 50%;
   }
 }
 </style>

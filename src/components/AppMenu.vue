@@ -1,6 +1,8 @@
-<script lang="ts">
+<script>
   import RandomWordList from '@/components/RandomWordList.vue'
-  export default {
+  import { defineComponent } from 'vue'
+
+  export default defineComponent({
     data() {
       return {
         infoPaneBlurb: '',
@@ -29,7 +31,7 @@
         const words = RandomWordList.data().wordList;
         const randomId = Math.floor(Math.random() * words.length);
         this.wrongLetters = []
-        this.correctLetters = []
+        this.correctLetters = ['-']
         this.mainWord = words[randomId]
         this.emitter.emit("receiveNewWord", this.mainWord);
       },
@@ -57,7 +59,7 @@
         return this.getNewWord();
       });
     }
-  }
+  })
 </script>
 
 <template>
@@ -65,6 +67,7 @@
     <img :src="[ '/hanging-man-' + hangingManState + '.png' ]">
   </div>
   <div class="greetings">
+    <br />
     <h1 class="green">Hangman</h1>
     <h3>{{ infoPaneBlurb }}</h3>
   </div>
@@ -92,11 +95,22 @@ h1 {
 
 h3 {
   font-size: 1.2rem;
+  height: 50px;
 }
 
 .greetings h1,
 .greetings h3 {
   text-align: center;
+}
+
+@media (max-width: 1023px) {
+  .greetings {
+    margin: auto;
+    text-align: center;
+  }
+  .hanging-man {
+    margin: auto;
+  }
 }
 
 @media (min-width: 1024px) {
