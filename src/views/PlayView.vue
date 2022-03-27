@@ -221,7 +221,7 @@ button:hover, button:active {
 }
 
 .wrong-letters-wrapper .correct {
-  color: hsla(160, 100%, 37%, 1);
+  color: #000;
 }
 
 .wrong-letters-wrapper .active {
