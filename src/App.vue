@@ -1,22 +1,23 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from '@/components/HelloWorld.vue'
+import AppMenu from '@/components/AppMenu.vue'
 </script>
 
 <template>
   <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+    <!--<img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />-->
 
     <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+      <AppMenu />
 
       <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
+        <RouterLink to="/">Play</RouterLink>
+        <RouterLink to="/about">About Me</RouterLink>
       </nav>
     </div>
   </header>
 
+  <!-- Display the actual page contents -->
   <RouterView />
 </template>
 
@@ -101,6 +102,7 @@ nav a:first-of-type {
     display: flex;
     place-items: flex-start;
     flex-wrap: wrap;
+    width: 450px;
   }
 
   .logo {

@@ -5,6 +5,11 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    'host': true,
+    'strictPort': true,
+    'https': true
+  },
   plugins: [vue()],
   resolve: {
     alias: {
