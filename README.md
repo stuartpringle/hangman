@@ -1,6 +1,8 @@
 # hangman
 
-This template should help get you started developing with Vue 3 in Vite.
+Hangman is a simple vue.js (version 3) app developed by Stuart Pringle.  You can see it in action here: [https://hangman.stuartpringle.ca](https://hangman.stuartpringle.ca)
+
+To get started, git clone the app and run `npm install` followed by `npm run dev`.  Browse to [https://localhost:3000](https://localhost:3000) in your local web browser, and have fun!
 
 ## Recommended IDE Setup
 
