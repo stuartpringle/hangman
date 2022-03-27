@@ -2,7 +2,7 @@
 
 Hangman is a simple vue.js (version 3) app developed by Stuart Pringle.  You can see it in action here: [https://hangman.stuartpringle.ca](https://hangman.stuartpringle.ca)
 
-For information on the best ways to edit/work on this project, visit [https://vuejs.org/guide/quick-start.html](the official Vue3 documentation)
+For information on the best ways to edit/work on this project, visit [the official Vue3 documentation](https://vuejs.org/guide/quick-start.html)
 
 ## Project Setup
 
