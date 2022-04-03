@@ -10,6 +10,7 @@
         correctLetters: [],
         mainWord: '',
         hangingManState: '1',
+        difficultyLevel: 2,
       }
     },
     components: {
@@ -27,13 +28,41 @@
         this.correctLetters.push(new_letter)
         this.emitter.emit("receiveCorrectLetters", this.correctLetters);
       },
-      getNewWord() {
+      getDifficultyOfWord(word_to_test) {
+        let countVowels = str => Array.from(str)
+          .filter(letter => 'aeiou'.includes(letter)).length;
+
+        let num_vowels = countVowels(word_to_test);
+        let word_difficulty = Math.round(parseInt(word_to_test.length) / parseInt(num_vowels));
+        if(num_vowels < 1) {
+          word_difficulty = 5;
+        }
+        return word_difficulty;
+      },
+      getNewWord(required_difficulty = 2) {
         const words = RandomWordList.data().wordList;
-        const randomId = Math.floor(Math.random() * words.length);
+
+        let word_difficulties = [];
+        let word_difficulty = 10;
+
+        console.log('difficulty', required_difficulty);
+
+        let randomId = Math.floor(Math.random() * words.length);
+        while(word_difficulty != required_difficulty) {
+          randomId = Math.floor(Math.random() * words.length);
+          word_difficulty = this.getDifficultyOfWord(words[randomId]);
+          //console.log(word_difficulty + ' - ' + words[randomId]);
+        }
+        
         this.wrongLetters = []
         this.correctLetters = ['-']
         this.mainWord = words[randomId]
         this.emitter.emit("receiveNewWord", this.mainWord);
+      },
+      animateHangingMan() {
+        if(this.hangingManState == 'alive') {
+          console.log('animate!')
+        }
       },
     },
     created() {
@@ -48,6 +77,7 @@
       });
       this.emitter.on("setHangingManState", (new_state) => {
         this.hangingManState = new_state
+        this.animateHangingMan()
       });
       this.emitter.on("getWrongLetters", (evt) => {
         this.emitter.emit("receiveWrongLetters", this.wrongLetters);
@@ -56,7 +86,17 @@
         this.emitter.emit("receiveCorrectLetters", this.correctLetters);
       });
       this.emitter.on("getNewWord", (evt) => {
-        return this.getNewWord();
+        this.getNewWord(evt);
+      });
+      this.emitter.on("getDifficulty", (evt) => {
+        this.emitter.emit("receiveDifficulty", this.difficultyLevel)
+      });
+      this.emitter.on("setDifficulty", (evt) => {
+        this.difficultyLevel = this.difficultyLevel + evt
+        if(this.difficultyLevel > 6) {
+          this.difficultyLevel = 1;
+        }
+        this.emitter.emit("receiveDifficulty", this.difficultyLevel)
       });
     }
   })

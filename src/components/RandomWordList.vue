@@ -2004,6 +2004,6 @@
             'selection',
             'expand']
         }
-      },
+      }
   })
 </script>

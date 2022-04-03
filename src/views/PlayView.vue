@@ -1,33 +1,46 @@
 <script>
   import { defineComponent } from 'vue'
   import { nextTick } from 'vue'
+  import RandomWordList from '@/components/RandomWordList.vue'
 
   export default defineComponent({
     data() {
       return {
-        main_input: null,
         game_word: '',
         wrongLetters: [],
         correctLetters: [],
         displayedCorrectString: '',
         displayedWrongString: '',
         alphabet: ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"],
-        hangingManStates: [1, 2, 3, 4, 5, 6, 7, 'dead'],
-        displayInput: false,
+        hangingManStates: [1, 2, 3, 4, 5, 6, 7, 'dead', 'alive'],
         playAgainButtonText: 'play',
+        difficultyLevel: 2,
+        difficultyLevelText: 'easy',
+        maxHangingManStateBeforeDeath: 7,
+        gameState: 'playing',
+        infoMessage: 'type or press a letter below to guess the word above',
+        gameWordText: '',
+        gameWordTextClass: '',
       }
     },
     methods: {
+      getKeyboardInput(e) {
+        let cmd = String.fromCharCode(e.keyCode).toLowerCase();
+        //console.log(cmd)
+        this.testLetter(cmd)// do stuff
+      },
       async init() {
-        const input_container = this.$refs.input_container;
         if(this.game_word == '') {
-          this.emitter.emit("getNewWord")
+          this.emitter.emit("getDifficulty")
+          this.emitter.emit("getNewWord", this.difficultyLevel)
           this.emitter.emit("getWrongLetters")
           this.emitter.emit("getCorrectLetters")
+          this.gameState = 'playing',
+          this.infoMessage = 'type or press a letter below to guess the word above',
+          this.gameWordText = '',
+          this.gameWordTextClass = '',
           this.playAgainButtonText = 'reset'
-          this.displayInput = true
           await nextTick()
-          input_container.focus()
         }
       },
       resetGame() {
@@ -69,13 +82,23 @@
             } else {
               temp[pos] = actualLetters[i].toLowerCase()
             }
-            
           }
         }
         //console.log(fullString)
         return temp.join('')
       },
-      testLetter(new_letter) {
+      testLetter(event) {
+        if(this.gameState !== 'playing') {
+          return
+        }
+        //console.log(event.target.tagName)
+        let new_letter = event
+        //String.fromCharCode($event.charCode)
+        //we are only interested in alphabetical characters
+        if(this.alphabet.join('').toLowerCase().indexOf(new_letter.toLowerCase()) < 0) {
+          return
+        }
+
         if(this.game_word.indexOf(new_letter) > -1) {
           if(this.correctLetters.indexOf(new_letter.toLowerCase()) < 0) {
             //console.log('correct letter: ' + new_letter)
@@ -88,13 +111,29 @@
           }
         }
       },
-      youLose() {
-        this.displayInput = false
+      youWin() {
         this.playAgainButtonText = 'play again'
-        setTimeout(() => {  this.emitter.emit("setHangingManState", this.hangingManStates[this.hangingManStates.length - 1]) }, 2000);
+        this.gameState = 'victory'
+        this.infoMessage = 'you saved the stick-figure man'
+        this.gameWordText = this.game_word
+        this.gameWordTextClass = 'correct'
+        setTimeout(() => {  this.emitter.emit("setHangingManState", 'alive') }, 1500);
+      },
+      youLose() {
+        this.playAgainButtonText = 'play again'
+        this.gameState = 'defeat'
+        this.infoMessage = 'you lose. it\'s very sad.'
+        this.gameWordText = this.game_word
+        this.gameWordTextClass = 'wrong'
+        setTimeout(() => {  this.emitter.emit("setHangingManState", 'dead') }, 1500);
+      },
+      updateDifficulty() {
+        this.emitter.emit("setDifficulty", 1);
+        this.resetGame();
       },
     },
     watch: {
+      /*
       // whenever main_input changes, this function will run
       main_input(newInput, oldInput) {
         if(newInput !== null) {
@@ -102,35 +141,68 @@
           this.testLetter(newInput)
         }
       }
+      */
     },
     mounted(){
       this.init()
       this.emitter.emit("updateInfoPaneBlurbEvent", 'We\'ve got a word just for you.  Can you guess it, or will you hang?')
     },
     created() {
+      window.addEventListener('keypress', this.getKeyboardInput);
+
+      this.emitter.on("receiveDifficulty", (evt) => {
+        this.difficultyLevel = evt
+
+        this.difficultyLevelText = 'easy'
+        if(this.difficultyLevel > 2 && this.difficultyLevel < 5) {
+          this.difficultyLevelText = 'medium'
+        } else if(this.difficultyLevel > 4 && this.difficultyLevel < 7) {
+          this.difficultyLevelText = 'hard'
+        }
+      });
+
       this.emitter.on("receiveCorrectLetters", (evt) => {
         this.correctLetters = evt
         this.getLettersToShow()
+
+        let tmp = this.game_word.split('')
+        let allLettersInWordFound = true
+        for(let i = 0; i < this.game_word.length; i++) {
+          //console.log('letter', tmp[i])
+          if(this.correctLetters.indexOf(tmp[i]) < 0) {
+            allLettersInWordFound = false
+          }
+
+        }
+        if(allLettersInWordFound) {
+          this.youWin()
+        }
       });
+
       this.emitter.on("receiveWrongLetters", (evt) => {
         this.wrongLetters = evt
         this.getLettersToShow()
-        if(this.wrongLetters.length > this.hangingManStates.length - 3) {
+        if(this.wrongLetters.length > this.hangingManStates[this.hangingManStates.indexOf(this.maxHangingManStateBeforeDeath) - 2]) {
           this.youLose();
         } else {
           this.emitter.emit("setHangingManState", this.hangingManStates[this.wrongLetters.length])
         }
       });
+
       this.emitter.on("receiveNewWord", (new_word) => {
         this.game_word = new_word
+        console.log(this.game_word)
         this.getLettersToShow()
       });
-    }
+    },
+    destroyed() {
+      window.removeEventListener('keypress', this.getKeyboardInput);
+    },
   })
 </script>
 
 <template>
-  <div class="play">
+  <div class="play" ref="playContainer">
     <div class="left-col column">
       <div class="main-word-wrapper">
         <ul>
@@ -142,22 +214,34 @@
       </div>
     </div>
     <div class="right-col column">
+      <div class="message-wrapper">
+        <h1 class="actual-word" :class="gameWordTextClass">{{ gameWordText }}</h1>
+        <h2 class="message">
+          {{ infoMessage }}
+        </h2>
+      </div>
       <div class="wrong-letters-wrapper">
         <div v-for="(letter, index) in displayedWrongString.split('')">
-          <span v-if="letter == ' '" class="inactive">{{ alphabet[index].toLowerCase() }}</span>
+          <span v-if="letter == ' '" class="inactive" @click="testLetter(alphabet[index].toLowerCase())">{{ alphabet[index].toLowerCase() }}</span>
           <span v-else-if="letter == '|'" class="correct">{{ alphabet[index].toLowerCase() }}</span>
           <span v-else class="active">{{ letter }}</span>
         </div>
       </div>
       <div class="input-wrapper">
-        <input ref="input_container" class="input-container" id="input-container" :class="[displayInput ? 'active' : 'inactive']" v-model="main_input" placeholder="guess here" />
         <button @click="resetGame" ref="play_again" id="play-again">{{ playAgainButtonText }}</button>
+        <button @click="updateDifficulty" :class="`difficulty-level-button level-${difficultyLevelText} level-${difficultyLevelText}-${difficultyLevel}`">{{ difficultyLevelText }}</button>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.message {
+  width: 100%;
+  margin: auto;
+  margin-top: 30px;
+  text-align: center;
+}
 button {
   padding: 20px;
   border-radius: 10px;
@@ -173,6 +257,47 @@ button {
 
 button:hover, button:active {
   background-color: #daefdd;
+}
+
+.actual-word {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.actual-word.correct {
+  color: hsla(160, 100%, 37%, 1);
+}
+
+.actual-word.wrong {
+  color: red;
+}
+
+.difficulty-level-button {
+  background-image: url('/difficulty-graph.png');
+  background-position: center;
+  background-size: 90% 80%;
+  background-repeat: no-repeat;
+  position: relative;
+  text-shadow: 1px 1px 1px white;
+}
+
+.difficulty-level-button.level-easy-1 {
+  background-image: url('/difficulty-graph-1.png');
+}
+.difficulty-level-button.level-easy-2 {
+  background-image: url('/difficulty-graph-2.png');
+}
+.difficulty-level-button.level-medium-3 {
+  background-image: url('/difficulty-graph-3.png');
+}
+.difficulty-level-button.level-medium-4 {
+  background-image: url('/difficulty-graph-4.png');
+}
+.difficulty-level-button.level-hard-5 {
+  background-image: url('/difficulty-graph-5.png');
+}
+.difficulty-level-button.level-hard-6 {
+  background-image: url('/difficulty-graph-6.png');
 }
 
 .column {
@@ -216,8 +341,13 @@ button:hover, button:active {
   font-size: 30pt;
 }
 
+.wrong-letters-wrapper > div > span {
+  padding: 10px;
+}
+
 .wrong-letters-wrapper .inactive {
   color: #ccc;
+  cursor: pointer;
 }
 
 .wrong-letters-wrapper .correct {
@@ -270,6 +400,12 @@ button:hover, button:active {
   }
   .column {
     width: 50%;
+    min-width: 490px;
+  }
+
+  .input-wrapper button {
+    display: inline-block;
+    margin: 10px;
   }
 }
 </style>
